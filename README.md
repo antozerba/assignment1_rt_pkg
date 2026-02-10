@@ -49,7 +49,7 @@ ros2 run turtlesim turtlesim_node
 In a second terminal:
 
 ```bash
-ros2 run assignment1_rt turtle_spawn.py
+ros2 run spawn turtle_spawn.py
 ```
 
 ### 3. Start the distance calculation node

@@ -65,8 +65,6 @@ class UINode : public rclcpp::Node {
         
     }
 
-
-
     void sendVelocity(int turtle_choice){
         geometry_msgs::msg::Twist twist;
         twist.linear.x = std::stof(linear_vel);
