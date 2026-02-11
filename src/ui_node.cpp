@@ -5,6 +5,8 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "custom_interface/srv/tresh_exam.hpp"
+#include "std_msgs/msg/string.hpp"
 #include <chrono>
 
 
@@ -17,6 +19,7 @@ class UINode : public rclcpp::Node {
         publisher2_ = this->create_publisher<geometry_msgs::msg::Twist>("/turtle2/cmd_vel", 10);
         stop_sub = this->create_subscription<std_msgs::msg::Bool>("/stop_cmd",10, std::bind(&UINode::stopCallBack, this, std::placeholders::_1));
         stopping = false;
+        tresh_client = this->create_client<custom_interface::srv::TreshExam>("set_treshold");
 
     }
     void run(){
@@ -31,6 +34,8 @@ class UINode : public rclcpp::Node {
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher1_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher2_;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr stop_sub;
+    rclcpp::Client<custom_interface::srv::TreshExam>::SharedPtr tresh_client;
+
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::TimerBase::SharedPtr goback_timer;
     std::string turtle;
@@ -111,6 +116,40 @@ class UINode : public rclcpp::Node {
 
     
     void getting_input(){
+        std::cout << "Do you want to set a new treshold? (y/n): ";
+        char choice;
+        std::cin >> choice;
+        if(choice == 'y' || choice == 'Y'){
+            float new_tresh;
+            insertTreshold(new_tresh);
+            auto request = std::make_shared<custom_interface::srv::TreshExam::Request>();
+            int i;
+            std::cout << "increase(1) or decrease(2), pick 1 or 2"  << std::endl;
+            std::cin >> i;
+
+            if(i == 1) request->sign = "increase";
+            if(i == 2) request->sign = "decrease";
+            request->value = new_tresh;
+            //calling service
+            
+            while(!tresh_client->wait_for_service(std::chrono::seconds(1))){
+                RCLCPP_WARN(this->get_logger(), "Waiting for treshold service to be available...");
+            }
+            auto result_future = tresh_client->async_send_request(request);
+            // wait for the result.
+            if(rclcpp::spin_until_future_complete(this->get_node_base_interface(), result_future) ==
+                rclcpp::FutureReturnCode::SUCCESS)
+            {
+                if(result_future.get()->ack){
+                RCLCPP_INFO(this->get_logger(), "Treshold set successfully. ");
+                }else{    
+                RCLCPP_ERROR(this->get_logger(), "Failed to set treshold");
+                }
+            } else {
+                RCLCPP_ERROR(this->get_logger(), "Failed to call treshold service");
+            }
+        }
+
     
         std::cout << "Choose turtle: " << std::endl;
         std::cin >> turtle;
@@ -119,6 +158,18 @@ class UINode : public rclcpp::Node {
         std::cout << "Choose angular vel: " << std::endl; 
         std::cin >> angular_vel;
     };
+    void insertTreshold(float & tresh){
+        std::cout << "Insert new treshold (float > 0): " << std::endl;
+        while(true){
+            std::cin >> tresh;
+            if(tresh > 0.0){
+                break;
+            }
+            else{
+                std::cout << "Invalid treshold. Please insert a float value greater than 0: " << std::endl;
+            }
+        }
+    }
 
 
 };

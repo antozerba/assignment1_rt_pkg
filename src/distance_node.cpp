@@ -5,6 +5,7 @@
 #include <chrono>
 #include "geometry_msgs/msg/twist.hpp"
 #include "std_msgs/msg/bool.hpp"
+#include "custom_interface/srv/tresh_exam.hpp"
 
 class DistanceNode : public rclcpp::Node {
     public:
@@ -20,6 +21,23 @@ class DistanceNode : public rclcpp::Node {
         turtle1_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/turtle1/cmd_vel",10);
         turtle2_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/turtle2/cmd_vel",10);
         stop_pub_ = this->create_publisher<std_msgs::msg::Bool>("/stop_cmd", 10);
+         tresh_service = this->create_service<custom_interface::srv::TreshExam>(
+            "set_treshold",
+            //lamba
+            [this](const std::shared_ptr<custom_interface::srv::TreshExam::Request> request, 
+                std::shared_ptr<custom_interface::srv::TreshExam::Response> response){
+                if(request->value <= 0.0){
+                    response->ack = false; 
+                    return;
+                }
+                if(request->sign == "increase"){
+                    this->tresh = this->tresh + request->value;
+                }else this->tresh = this->tresh - (request->value);
+                
+                RCLCPP_INFO(this->get_logger(), "Treshold updated to: %f", this->tresh);
+                response->ack = true; //aknowledgmentl
+            }
+        );
 
     }
     private:
@@ -29,6 +47,12 @@ class DistanceNode : public rclcpp::Node {
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr turtle1_vel_pub_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr turtle2_vel_pub_;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr stop_pub_;
+
+
+    //new part
+    rclcpp::Service<custom_interface::srv::TreshExam>::SharedPtr tresh_service;
+
+
     rclcpp::TimerBase::SharedPtr timer_;
     turtlesim::msg::Pose pose1;
     turtlesim::msg::Pose pose2;
