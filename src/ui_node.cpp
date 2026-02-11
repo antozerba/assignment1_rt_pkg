@@ -15,8 +15,8 @@ class UINode : public rclcpp::Node {
     public:
     UINode() : Node("ui_node"){
         RCLCPP_INFO(this->get_logger(), "Velocity Input Node has been started.");
-        publisher1_ = this->create_publisher<geometry_msgs::msg::Twist>("/turtle1/cmd_vel", 10);
-        publisher2_ = this->create_publisher<geometry_msgs::msg::Twist>("/turtle2/cmd_vel", 10);
+        publisher1_ = this->create_publisher<geometry_msgs::msg::Twist>("/robot1/robot_vel", 10);
+        publisher2_ = this->create_publisher<geometry_msgs::msg::Twist>("/robot2/robot_vel", 10);
         stop_sub = this->create_subscription<std_msgs::msg::Bool>("/stop_cmd",10, std::bind(&UINode::stopCallBack, this, std::placeholders::_1));
         stopping = false;
         tresh_client = this->create_client<custom_interface::srv::TreshExam>("set_treshold");
